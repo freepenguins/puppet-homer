@@ -16,6 +16,7 @@ class homer::agent {
     ensure  => $homer::agent_service_config_ensure,
     mode    => $homer::agent_service_config_mode,
     content => $homer::agent_service_config_content,
+    require => Package[$homer::agent_package_name],
     notify  => $homer::agent_service_config_notify,
   }
 

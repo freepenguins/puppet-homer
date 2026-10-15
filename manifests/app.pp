@@ -1,9 +1,8 @@
 # == Class: homer::app
 #
 # Installs homer-app from QXIP's apt repo, writes webapp_config.json,
-# runs the one-time DB initialization commands documented at
-# https://github.com/sipcapture/homer/wiki/Quick-Install, and starts the
-# homer-app service.
+# runs `homer-app -initialize_db` once to create the database user,
+# databases and config tables, and starts the homer-app service.
 #
 class homer::app {
   package { $homer::app_package_name:
@@ -22,20 +21,26 @@ class homer::app {
     require => $homer::app_config_require,
   }
 
-  # One-time DB bootstrap, mirrors the Quick-Install wiki verbatim.
-  # A marker file makes the whole sequence idempotent instead of relying
-  # on each homer-app subcommand's own idempotency.
+  # One-time database setup. -initialize_db creates the database user with
+  # its password, the homer_data and homer_config databases, and the config
+  # tables; the marker file below keeps it from running again. The command
+  # carries passwords, so it is Sensitive and redacted from logs and reports.
+  $db_init = [
+    'homer-app -initialize_db',
+    '-database-root-user=postgres',
+    "-database-root-password=${stdlib::shell_escape($homer::db_admin_password)}",
+    '-database-host=127.0.0.1',
+    "-database-homer-user=${stdlib::shell_escape($homer::db_user)}",
+    "-database-homer-password=${stdlib::shell_escape($homer::db_password)}",
+    "-webapp-config-path=${stdlib::shell_escape($homer::app_config_dir)}",
+  ].join(' ')
+
   exec { 'homer-app-db-init':
-    command => [
-      "homer-app -create-config-db -database-root-user=postgres -database-host=127.0.0.1 -database-root-password='${homer::app_db_admin_password}' -database-homer-user=${homer::app_db_user}",
-      "homer-app -create-data-db -database-root-user=postgres -database-host=127.0.0.1 -database-root-password='${homer::app_db_admin_password}' -database-homer-user=${homer::app_db_user}",
-      'homer-app -create-table-db-config',
-      'homer-app -populate-table-db-config',
-      'homer-app -upgrade-table-db-config',
-    ].join(' && '),
+    command => Sensitive($db_init),
     path    => ['/usr/local/bin', '/usr/bin', '/bin'],
     creates => $homer::app_db_init_path,
-    require => [File[$homer::app_config_path], Class['postgresql']],
+    require => File[$homer::app_config_path],
+    before  => Service[$homer::app_service_name],
   }
 
   file { $homer::app_db_init_path:

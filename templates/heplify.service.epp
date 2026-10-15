@@ -5,7 +5,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=/opt/heplify
-ExecStart=/usr/bin/heplify -i <%= $interface %> -hs 127.0.0.1:9060 -m SIPRTCP
+ExecStart=/usr/local/bin/heplify -i <%= $interface %> -hs 127.0.0.1:9060 -m SIPRTCP
 ExecStop=/bin/kill $MAINPID
 Restart=on-failure
 RestartSec=10s

@@ -16,20 +16,18 @@ class homer::repo {
       apt::source { $homer::repo_name :
         comment       => 'QXIP SIPcapture APT Repository',
         location      => $homer::repo_location,
-        release       => [$homer::repo_release],
-        repos         => $homer::repo_components,
-        architecture  => $homer::repo_architectures,
+        release       => $homer::repo_release,
+        repos         => $homer::repo_components.join(' '),
+        architecture  => $homer::repo_architectures.empty ? {
+          true    => undef,
+          default => $homer::repo_architectures.join(','),
+        },
         pin           => $homer::repo_pin_priority,
         key           => {
           'name'   => $homer::repo_key_name,
           'source' => $homer::repo_key_source,
-          'id'     => $homer::repo_key_id,
         },
         notify_update => true,
-      }
-
-      if $homer::manage_package {
-        Apt::Source[$homer::repo_name] -> Package[$homer::package_name]
       }
     } else {
       $homer::repo_config.each() | String[1] $resource_type, Hash $resources | {
