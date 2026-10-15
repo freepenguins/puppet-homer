@@ -9,7 +9,7 @@ class homer (
   Boolean                                                  $manage_repo                  = true,
   String                                                   $repo_name                    = 'sipcapture_official',
   Stdlib::HTTPUrl                                          $repo_location                = 'https://packagecloud.io/qxip/sipcapture/debian/',
-  String[1]                                                $repo_release                 = "${facts['os']['distro']['codename']}",
+  String[1]                                                $repo_release                 = $facts['os']['distro']['codename'],
   Array[String[1]]                                         $repo_components              = ['main'],
   String[1]                                                $repo_key_name                = 'homer-repo.gpg',
   Stdlib::HTTPUrl                                          $repo_key_source              = 'https://packagecloud.io/qxip/sipcapture/gpgkey',
@@ -27,7 +27,7 @@ class homer (
   String                                                   $app_config_mode              = '0640',
   String                                                   $app_config_owner             = 'root',
   String                                                   $app_config_group             = 'root',
-  String                                                   $app_config_content           = epp('homer/webapp_config.json.epp', {'db_user' => $db_user, 'db_password' => $db_password, }),
+  String                                                   $app_config_content           = epp('homer/webapp_config.json.epp', { 'db_user' => $db_user, 'db_password' => $db_password, }),
   String                                                   $app_db_init_path             = "${app_base_dir}/.homerapp-db-initialized",
   String                                                   $app_package_name             = 'homer-app',
   String                                                   $app_package_ensure           = 'present',
@@ -59,18 +59,17 @@ class homer (
   String                                                   $server_service_ensure        = 'running',
   Boolean                                                  $server_service_enable        = true,
   String                                                   $server_service_name          = 'heplify-server',
-  Optional[Variant[Array[Type[Resource]], Type[Resource]]] $server_service_require       = [Package[$server_package_name], Class['::postgresql']],
+  Optional[Variant[Array[Type[Resource]], Type[Resource]]] $server_service_require       = [Package[$server_package_name], Class['postgresql']],
   String                                                   $server_config_ensure         = 'file',
   String                                                   $server_config_mode           = '0640',
   String                                                   $server_config_owner          = 'root',
   String                                                   $server_config_group          = 'root',
   String                                                   $server_config_path           = '/etc/heplify-server/heplify-server.toml',
-  String                                                   $server_config_content        = epp('homer/heplify-server.toml.epp', {'db_user' => $db_user, 'db_password' => $db_password, }),
+  String                                                   $server_config_content        = epp('homer/heplify-server.toml.epp', { 'db_user' => $db_user, 'db_password' => $db_password, }),
   Optional[Variant[Array[Type[Resource]], Type[Resource]]] $server_config_notify         = Service[$server_service_name],
   Optional[Variant[Array[Type[Resource]], Type[Resource]]] $server_config_require        = Package[$server_package_name],
 
 ) {
-
   contain homer::repo
 
   if $homer::install_server {

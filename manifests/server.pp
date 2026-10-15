@@ -6,14 +6,13 @@
 # $config_path if your packaged layout differs).
 #
 class homer::server {
-
   package { $homer::server_package_name:
     ensure   => $homer::server_package_ensure,
     provider => $homer::server_package_provider,
     require  => $homer::server_package_require,
   }
 
-  file {$homer::server_config_path:
+  file { $homer::server_config_path:
     ensure  => $homer::server_config_ensure,
     mode    => $homer::server_config_mode,
     owner   => $homer::server_config_owner,

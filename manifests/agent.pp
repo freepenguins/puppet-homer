@@ -6,7 +6,6 @@
 # Off by default ($homer::install_agent).
 #
 class homer::agent {
-
   package { $homer::agent_package_name:
     ensure   => $homer::agent_package_ensure,
     provider => $homer::agent_package_provider,

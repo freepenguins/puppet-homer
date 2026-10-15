@@ -6,7 +6,6 @@
 # homer-app service.
 #
 class homer::app {
-
   package { $homer::app_package_name:
     ensure   => $homer::app_package_ensure,
     require  => $homer::app_package_require,
@@ -27,16 +26,16 @@ class homer::app {
   # A marker file makes the whole sequence idempotent instead of relying
   # on each homer-app subcommand's own idempotency.
   exec { 'homer-app-db-init':
-    command => @("CMD"/L),
-      homer-app -create-config-db -database-root-user=postgres -database-host=127.0.0.1 -database-root-password='${homer::app_db_admin_password}' -database-homer-user=${homer::app_db_user} && \
-      homer-app -create-data-db -database-root-user=postgres -database-host=127.0.0.1 -database-root-password='${homer::app_db_admin_password}' -database-homer-user=${homer::app_db_user} && \
-      homer-app -create-table-db-config && \
-      homer-app -populate-table-db-config && \
-      homer-app -upgrade-table-db-config
-      | CMD
+    command => [
+      "homer-app -create-config-db -database-root-user=postgres -database-host=127.0.0.1 -database-root-password='${homer::app_db_admin_password}' -database-homer-user=${homer::app_db_user}",
+      "homer-app -create-data-db -database-root-user=postgres -database-host=127.0.0.1 -database-root-password='${homer::app_db_admin_password}' -database-homer-user=${homer::app_db_user}",
+      'homer-app -create-table-db-config',
+      'homer-app -populate-table-db-config',
+      'homer-app -upgrade-table-db-config',
+    ].join(' && '),
     path    => ['/usr/local/bin', '/usr/bin', '/bin'],
     creates => $homer::app_db_init_path,
-    require => [File[$homer::app_config_path], Class['::postgresql']],
+    require => [File[$homer::app_config_path], Class['postgresql']],
   }
 
   file { $homer::app_db_init_path:

@@ -1,0 +1,47 @@
+{
+  "name": "freepenguins-homer",
+  "version": "0.1.0",
+  "author": "freepenguins",
+  "summary": "Installs HOMER 7 (homer-app, heplify-server and heplify) from the QXIP SIPCAPTURE repository",
+  "license": "Apache-2.0",
+  "source": "https://github.com/freepenguins/puppet-homer",
+  "project_page": "https://github.com/freepenguins/puppet-homer",
+  "issues_url": "https://github.com/freepenguins/puppet-homer/issues",
+  "dependencies": [
+    {
+      "name": "puppetlabs/stdlib",
+      "version_requirement": ">= 9.0.0 < 11.0.0"
+    },
+    {
+      "name": "puppetlabs/apt",
+      "version_requirement": ">= 9.2.0 < 12.0.0"
+    }
+  ],
+  "operatingsystem_support": [
+    {
+      "operatingsystem": "Debian",
+      "operatingsystemrelease": [
+        "11",
+        "12"
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "name": "puppet",
+      "version_requirement": ">= 7.0.0 < 9.0.0"
+    }
+  ],
+  "tags": [
+    "homer",
+    "sipcapture",
+    "heplify",
+    "heplify-server",
+    "hep",
+    "sip",
+    "voip"
+  ],
+  "pdk-version": "3.4.0",
+  "template-url": "https://github.com/puppetlabs/pdk-templates#3.8.0",
+  "template-ref": "tags/3.8.0-0-gf1124a6"
+}
