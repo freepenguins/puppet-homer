@@ -1,0 +1,6 @@
+<%- | String $command | -%>
+# Managed by Puppet (homer). Replaces the command line of the unit the
+# heplify package ships.
+[Service]
+ExecStart=
+ExecStart=<%= $command %>

@@ -1,0 +1,176 @@
+---
+# Defaults for every homer parameter. Override any key in your own Hiera.
+# Out of the box nothing is installed: turn on install_server, install_app
+# and install_agent for the parts a host should run.
+
+homer::install_server: false
+homer::install_app: false
+homer::install_agent: false
+
+# --- database ----------------------------------------------------------------
+# homer-app's own defaults. Override the passwords in production.
+homer::db_host: '127.0.0.1'
+homer::db_port: 5432
+homer::db_user: homer_user
+homer::db_password: homer_password
+homer::db_data_name: homer_data
+homer::db_config_name: homer_config
+homer::db_admin_user: postgres
+homer::db_admin_password: ''
+
+# --- QXIP SIPCAPTURE repository ---------------------------------------------
+homer::manage_repo: true
+homer::repo_name: sipcapture_official
+homer::repo_location: 'https://packagecloud.io/qxip/sipcapture/debian/'
+homer::repo_release: "%{facts.os.distro.codename}"
+homer::repo_components:
+  - main
+homer::repo_key_name: homer-repo.gpg
+homer::repo_key_source: 'https://packagecloud.io/qxip/sipcapture/gpgkey'
+homer::repo_architectures: []
+homer::repo_pin_priority: ~
+homer::repo_config: {}
+homer::repo_config_defaults: {}
+
+# --- heplify-server (install_server) ----------------------------------------
+homer::server_package_name: heplify-server
+homer::server_package_ensure: installed
+homer::server_package_provider: ~
+homer::server_config_path: /etc/heplify-server.toml
+# heplify-server setting names. Anything not listed takes heplify-server's
+# built-in default, so the listeners it would otherwise open (TLS on 9060,
+# WebSocket on 3000, where Grafana usually is) are turned off here. The
+# database settings are added from the db_* parameters.
+homer::server_settings:
+  HEPAddr: '0.0.0.0:9060'
+  HEPTCPAddr: ''
+  HEPTLSAddr: ''
+  HEPWSAddr: ''
+  PromAddr: ''
+  DBShema: homer7
+  DBDriver: postgres
+  DBRotate: true
+  DBDropDays: 14
+  LogLvl: info
+  LogStd: true
+  LogSys: false
+homer::server_service_name: heplify-server
+homer::server_service_ensure: running
+homer::server_service_enable: true
+
+# --- homer-app (install_app) ------------------------------------------------
+homer::app_package_name: homer-app
+homer::app_package_ensure: installed
+homer::app_package_provider: ~
+homer::app_config_dir: /usr/local/homer/etc
+# webapp_config.json, less the database connections, which are added from the
+# db_* parameters (data node "LocalNode").
+homer::app_settings:
+  database_data:
+    LocalNode:
+      node: LocalNode
+      keepalive: true
+  database_config:
+    node: LocalConfig
+    keepalive: true
+  hep_relay:
+    host: '127.0.0.1'
+    port: 9060
+  prometheus_config:
+    enable: true
+    user: ''
+    pass: ''
+    host: 'http://127.0.0.1:9090'
+    api: api/v1
+  loki_config:
+    enable: false
+    user: ''
+    password: ''
+    param_query: query_range
+    regexp: false
+    host: 'http://127.0.0.1:3100'
+    template: '{job="heplify-server"} |~ "%callid%"'
+    external_url: ''
+    api: loki/api/v1
+  grafana_config:
+    enable: true
+    host: 'http://127.0.0.1:3000'
+    path: grafana
+    token: ''
+    proxy_control: false
+    proxy_check: simple
+  swagger:
+    enable: true
+    api_json: /usr/local/homer/etc/swagger.json
+    api_host: '127.0.0.1:9080'
+  http_settings:
+    host: '0.0.0.0'
+    port: 9080
+    root: /usr/local/homer/dist
+    gzip: true
+    path: /
+    gzip_static: true
+    debug: false
+  https_settings:
+    enable: false
+    host: '0.0.0.0'
+    port: 443
+    min_tls_version: '1.2'
+    use_mozilla_profile: true
+    cert: /usr/local/homer/tls/cert.pem
+    key: /usr/local/homer/tls/key.pem
+  transaction_settings:
+    deduplicate:
+      global: false
+  api_settings:
+    enable_token_access: false
+    add_captid_to_resolve: false
+  system_settings:
+    logpath: /usr/local/homer/log
+    logname: homer-app.log
+    loglevel: info
+    logstdout: false
+  auth_settings:
+    type: internal
+    jwt_secret: ''
+    gravatar: false
+    auth_token_header: Auth-Token
+    gravatar_url: 'https://www.gravatar.com/avatar/%s.jpg'
+    token_expire: 1200
+    user_groups:
+      - admin
+      - user
+      - support
+homer::app_db_init: true
+homer::app_db_init_marker: /usr/local/homer/.homerapp-db-initialized
+homer::app_service_name: homer-app
+homer::app_service_ensure: running
+homer::app_service_enable: true
+
+# --- heplify capture agent (install_agent) ----------------------------------
+homer::agent_package_name: heplify
+homer::agent_package_ensure: installed
+homer::agent_package_provider: ~
+homer::agent_interface: any
+homer::agent_hep_server: '127.0.0.1:9060'
+homer::agent_capture_mode: SIPRTCP
+homer::agent_options: []
+homer::agent_service_name: heplify
+homer::agent_service_ensure: running
+homer::agent_service_enable: true
+
+# --- extra files ------------------------------------------------------------
+homer::configs: {}
+homer::configs_defaults: {}
+
+lookup_options:
+  homer::db_password:
+    convert_to: Sensitive
+  homer::db_admin_password:
+    convert_to: Sensitive
+  homer::server_settings:
+    merge:
+      strategy: deep
+  homer::app_settings:
+    merge:
+      strategy: deep

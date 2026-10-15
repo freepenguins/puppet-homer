@@ -1,20 +1,27 @@
-# == Class: homer::repo
+# @summary Adds QXIP's SIPCAPTURE APT repository.
 #
-# Adds the two third-party apt sources this stack needs:
-#   - QXIP's packagecloud repo (heplify-server, homer-app, heplify)
+# The repository provides heplify-server, homer-app and heplify. Debian's
+# own repositories already carry PostgreSQL.
 #
-# Debian's own repos already carry postgresql, prometheus,
-# prometheus-alertmanager and prometheus-node-exporter
-#
-# subclasses are private and read the main class directly now
 # @api private
 class homer::repo {
   assert_private()
 
   if $homer::manage_repo {
     if $homer::repo_config.empty {
-      apt::source { $homer::repo_name :
-        comment       => 'QXIP SIPcapture APT Repository',
+      unless $facts['os']['family'] == 'Debian' {
+        $message = [
+          "homer: manage_repo only sets up QXIP's APT repository, and this is a ${facts['os']['family']} system.",
+          'Set homer::manage_repo to false and provide the packages from a repository you manage.',
+        ].join(' ')
+        fail($message)
+      }
+
+      # Strings rather than arrays: puppetlabs-apt accepts arrays only from
+      # 10.0.0. With only `name` and `source` in the key hash, apt writes a
+      # keyring and signed-by instead of using the deprecated apt-key.
+      apt::source { $homer::repo_name:
+        comment       => 'QXIP SIPCAPTURE APT repository',
         location      => $homer::repo_location,
         release       => $homer::repo_release,
         repos         => $homer::repo_components.join(' '),
@@ -30,7 +37,7 @@ class homer::repo {
         notify_update => true,
       }
     } else {
-      $homer::repo_config.each() | String[1] $resource_type, Hash $resources | {
+      $homer::repo_config.each |String[1] $resource_type, Hash $resources| {
         create_resources($resource_type, $resources, $homer::repo_config_defaults)
       }
     }

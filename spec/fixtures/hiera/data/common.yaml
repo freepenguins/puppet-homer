@@ -1,0 +1,8 @@
+---
+homer::db_password: 'from-hiera'
+homer::db_admin_password: 'pg-from-hiera'
+homer::server_settings:
+  PromAddr: '127.0.0.1:9096'
+homer::app_settings:
+  http_settings:
+    port: 8080

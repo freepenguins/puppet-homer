@@ -1,5 +1,0 @@
----
-homer::repo_name: 'sipcapture_official'
-homer::repo_location: 'https://packagecloud.io/qxip/sipcapture/debian/'
-homer::repo_key_id: '8AE3BC335C18EB6F'
-homer::repo_key_source: 'https://packagecloud.io/qxip/sipcapture/gpgkey'
