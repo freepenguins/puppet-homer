@@ -1,6 +1,6 @@
 {
   "name": "freepenguins-homer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "freepenguins",
   "summary": "Installs HOMER 7 (homer-app, heplify-server and heplify) from the QXIP SIPCAPTURE repository",
   "license": "Apache-2.0",

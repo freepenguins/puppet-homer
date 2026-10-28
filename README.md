@@ -43,6 +43,8 @@ settings hashes that you can extend from Hiera.
   `/usr/local/homer/etc/webapp_config.json` (mode 0600, as the package installs
   it), a one-time database setup recorded in
   `/usr/local/homer/.homerapp-db-initialized`, and the `homer-app` service.
+  With `app_admin_password` also `/usr/local/homer/etc/.admin_login.json`
+  (mode 0600) and `/usr/local/sbin/homer-app-login-check`.
 * With `install_agent`: the `heplify` package, a systemd drop-in at
   `/etc/systemd/system/heplify.service.d/homer.conf` that sets heplify's
   command line, and the `heplify` service. The unit file the package ships is
@@ -73,7 +75,8 @@ Hiera with [hiera-eyaml](https://github.com/voxpupuli/hiera-eyaml) or a similar
 backend.
 
 Then sign in to `http://<host>:9080` as `admin` with the password
-`sipcapture`, homer-app's default, and change it.
+`sipcapture`, homer-app's default, and change it, or let the module set it
+(see "The web interface's admin password").
 
 ## Usage
 
@@ -169,6 +172,23 @@ homer::agent_options:
 
 `agent_hep_server` takes several comma-separated destinations.
 
+### The web interface's admin password
+
+```yaml
+homer::app_admin_password: 'ui-secret'   # eyaml in practice
+# homer::app_admin_user: 'admin'          # the default
+```
+
+The password is converted to `Sensitive` on lookup. homer-app keeps only a
+bcrypt hash, so on every run the module logs in to
+`http://<http_settings.host>:<http_settings.port>/api/v3/auth` (`127.0.0.1`
+when the host is `0.0.0.0`) with the password, using
+`/usr/local/sbin/homer-app-login-check` and a root-only JSON body in
+`/usr/local/homer/etc/.admin_login.json`. If the login fails, it runs
+`homer-app -update-ui-user=<user> -update-ui-password=<password>`. The user
+must already exist. Left empty (the default), the password is not managed and
+the JSON file is removed.
+
 ### Databases that already exist
 
 If the databases and user were created some other way, skip homer-app's setup:
@@ -209,6 +229,12 @@ See [REFERENCE.md](REFERENCE.md) for every parameter.
   `repo_location` and `repo_release` at a suite that does.
 * The packages are amd64 only.
 * PostgreSQL is not managed.
+* `app_admin_password` is passed to homer-app on its command line (homer-app
+  has no other way), so it is visible in the process list while that command
+  runs; it is redacted from Puppet's logs and reports. The login check needs
+  homer-app's plain-HTTP listener on `http_settings`, and the agent's Ruby at
+  `/opt/puppetlabs/puppet/bin/ruby`. While homer-app isn't answering, the
+  check fails and the password is set again, which is harmless.
 * freepenguins/heplify can also run heplify-server and heplify, installed from
   their release binaries. Use one module or the other for each service on a
   host, not both.

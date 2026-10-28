@@ -111,6 +111,8 @@ The following parameters are available in the `homer` class:
 * [`app_settings`](#-homer--app_settings)
 * [`app_db_init`](#-homer--app_db_init)
 * [`app_db_init_marker`](#-homer--app_db_init_marker)
+* [`app_admin_user`](#-homer--app_admin_user)
+* [`app_admin_password`](#-homer--app_admin_password)
 * [`app_service_name`](#-homer--app_service_name)
 * [`app_service_ensure`](#-homer--app_service_ensure)
 * [`app_service_enable`](#-homer--app_service_enable)
@@ -361,6 +363,21 @@ Data type: `Stdlib::Absolutepath`
 
 File written after the database setup succeeds; while it exists the
 setup does not run again.
+
+##### <a name="-homer--app_admin_user"></a>`app_admin_user`
+
+Data type: `String[1]`
+
+homer-app web UI user whose password `app_admin_password` sets.
+
+##### <a name="-homer--app_admin_password"></a>`app_admin_password`
+
+Data type: `Variant[String, Sensitive[String]]`
+
+Password for `app_admin_user`, or empty to leave it alone (homer-app's
+default for `admin` is `sipcapture`). Converted to `Sensitive` on lookup.
+Each run logs in with it; if that fails, the password is set with
+`homer-app -update-ui-user`. The user must already exist.
 
 ##### <a name="-homer--app_service_name"></a>`app_service_name`
 

@@ -1,0 +1,24 @@
+#!/opt/puppetlabs/puppet/bin/ruby
+# frozen_string_literal: true
+
+# Managed by Puppet (freepenguins-homer).
+#
+# Usage: homer-app-login-check URL FILE
+#
+# Posts FILE, a JSON body {"username": ..., "password": ...}, to homer-app's
+# login URL (http://127.0.0.1:9080/api/v3/auth) and exits 0 if homer-app
+# accepts it. The password stays in FILE, off the command line.
+require 'net/http'
+require 'uri'
+
+begin
+  uri = URI(ARGV.fetch(0))
+  body = File.read(ARGV.fetch(1))
+  response = Net::HTTP.start(uri.host, uri.port, open_timeout: 5, read_timeout: 10) do |http|
+    http.post(uri.path, body, 'Content-Type' => 'application/json')
+  end
+  exit(response.is_a?(Net::HTTPSuccess) ? 0 : 1)
+rescue StandardError => e
+  warn "homer-app-login-check: #{e.message}"
+  exit 1
+end

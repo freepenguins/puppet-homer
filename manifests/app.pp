@@ -86,4 +86,65 @@ class homer::app {
     enable  => $homer::app_service_enable,
     require => Package[$homer::app_package_name],
   }
+
+  $login_file = "${homer::app_config_dir}/.admin_login.json"
+
+  $admin_password = $homer::app_admin_password ? {
+    Sensitive => $homer::app_admin_password.unwrap,
+    default   => $homer::app_admin_password,
+  }
+
+  if $admin_password != '' {
+    $http_host = $settings.dig('http_settings', 'host').lest || { '127.0.0.1' }
+    $login_host = $http_host ? {
+      /\A(0\.0\.0\.0|::|)\z/ => '127.0.0.1',
+      default              => $http_host,
+    }
+    $login_port = $settings.dig('http_settings', 'port').lest || { 9080 }
+    $login_url = "http://${login_host}:${login_port}/api/v3/auth"
+
+    # The login body the check posts, so the password never appears on its
+    # command line. Root-only, like webapp_config.json.
+    file { $login_file:
+      ensure    => file,
+      owner     => 'root',
+      group     => 'root',
+      mode      => '0600',
+      show_diff => false,
+      content   => Sensitive(stdlib::to_json({ 'username' => $homer::app_admin_user, 'password' => $admin_password })),
+      require   => Package[$homer::app_package_name],
+    }
+
+    file { '/usr/local/sbin/homer-app-login-check':
+      ensure => file,
+      owner  => 'root',
+      group  => 'root',
+      mode   => '0755',
+      source => 'puppet:///modules/homer/homer-app-login-check',
+    }
+
+    # homer-app stores the password as a bcrypt hash, so the only way to
+    # compare is to log in. When the login fails (a new password, or
+    # homer-app not answering yet), set it with homer-app's own flag; it
+    # is a no-op when the password already matches. homer-app only takes
+    # the password on its command line, so it is visible in the process
+    # list while this runs.
+    $update = [
+      'homer-app',
+      "-update-ui-user=${stdlib::shell_escape($homer::app_admin_user)}",
+      "-update-ui-password=${stdlib::shell_escape($admin_password)}",
+      "-webapp-config-path=${stdlib::shell_escape($homer::app_config_dir)}",
+    ].join(' ')
+
+    exec { 'homer-app-admin-password':
+      command => Sensitive($update),
+      unless  => "/usr/local/sbin/homer-app-login-check ${stdlib::shell_escape($login_url)} ${stdlib::shell_escape($login_file)}",
+      path    => ['/usr/local/bin', '/usr/bin', '/bin'],
+      require => [File[$login_file, '/usr/local/sbin/homer-app-login-check'], Service[$homer::app_service_name]],
+    }
+  } else {
+    file { $login_file:
+      ensure => absent,
+    }
+  }
 }

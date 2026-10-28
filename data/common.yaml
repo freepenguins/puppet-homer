@@ -143,6 +143,8 @@ homer::app_settings:
       - support
 homer::app_db_init: true
 homer::app_db_init_marker: /usr/local/homer/.homerapp-db-initialized
+homer::app_admin_user: admin
+homer::app_admin_password: ''
 homer::app_service_name: homer-app
 homer::app_service_ensure: running
 homer::app_service_enable: true
@@ -167,6 +169,8 @@ lookup_options:
   homer::db_password:
     convert_to: Sensitive
   homer::db_admin_password:
+    convert_to: Sensitive
+  homer::app_admin_password:
     convert_to: Sensitive
   homer::server_settings:
     merge:

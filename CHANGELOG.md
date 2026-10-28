@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## Release 0.2.0
+
+**Features**
+
+* `app_admin_password` (and `app_admin_user`, default `admin`) sets
+  homer-app's web interface password. Each run logs in with it and, only when
+  that fails, sets it with `homer-app -update-ui-user`. Converted to
+  `Sensitive` on lookup; empty (the default) leaves it alone.
+
 ## Release 0.1.0
 
 First release on the Puppet Forge.

@@ -8,6 +8,8 @@ describe 'homer' do
   webapp_json = '/usr/local/homer/etc/webapp_config.json'
   marker = '/usr/local/homer/.homerapp-db-initialized'
   dropin = '/etc/systemd/system/heplify.service.d/homer.conf'
+  login_json = '/usr/local/homer/etc/.admin_login.json'
+  check = '/usr/local/sbin/homer-app-login-check'
 
   on_supported_os.each do |os, os_facts|
     context "on #{os}" do
@@ -123,6 +125,50 @@ describe 'homer' do
 
         it { is_expected.to contain_file(marker).that_requires('Exec[homer-app-db-init]') }
         it { is_expected.to contain_service('homer-app').with(ensure: 'running', enable: true).that_requires('Package[homer-app]') }
+        it { is_expected.not_to contain_exec('homer-app-admin-password') }
+        it { is_expected.to contain_file(login_json).with_ensure('absent') }
+      end
+
+      context 'with install_app and app_admin_password' do
+        let(:params) { { install_app: true, app_admin_password: sensitive("it's new") } }
+        let(:login_file) { catalogue.resource('File', login_json) }
+
+        it { is_expected.to compile.with_all_deps }
+
+        it 'writes the login body root-only, with the password out of the diff' do
+          is_expected.to contain_file(login_json).with(owner: 'root', group: 'root', mode: '0600', show_diff: false).that_requires('Package[homer-app]')
+          expect(login_file.sensitive_parameters).to include(:content)
+          expect(JSON.parse(login_file[:content])).to eq('username' => 'admin', 'password' => "it's new")
+        end
+
+        it { is_expected.to contain_file(check).with(mode: '0755', source: 'puppet:///modules/homer/homer-app-login-check') }
+
+        it {
+          is_expected.to contain_exec('homer-app-admin-password')
+            .with(
+              command: sensitive("homer-app -update-ui-user=admin -update-ui-password=it\\'s\\ new -webapp-config-path=/usr/local/homer/etc"),
+              unless: "#{check} http://127.0.0.1:9080/api/v3/auth #{login_json}",
+            )
+            .that_requires(["File[#{login_json}]", "File[#{check}]", 'Service[homer-app]'])
+        }
+      end
+
+      context 'with app_admin_password, another admin user and http_settings' do
+        let(:params) do
+          {
+            install_app: true, app_admin_user: 'root-ui', app_admin_password: 'pw',
+            app_settings: { 'http_settings' => { 'host' => '192.0.2.5', 'port' => 8443 } }
+          }
+        end
+
+        it { is_expected.to contain_exec('homer-app-admin-password').with_unless("#{check} http://192.0.2.5:8443/api/v3/auth #{login_json}") }
+        it { is_expected.to contain_exec('homer-app-admin-password').with_command(sensitive(%r{-update-ui-user=root-ui -update-ui-password=pw })) }
+      end
+
+      context 'with app_admin_password and no http_settings host or port' do
+        let(:params) { { install_app: true, app_admin_password: 'pw', app_settings: {} } }
+
+        it { is_expected.to contain_exec('homer-app-admin-password').with_unless("#{check} http://127.0.0.1:9080/api/v3/auth #{login_json}") }
       end
 
       context 'with install_app and passwords that need shell quoting' do
@@ -247,6 +293,7 @@ describe 'homer' do
         it { is_expected.to contain_file(server_toml).with_content(%r{^DBPass = "from-hiera"$}) }
         it { expect(webapp['http_settings']).to include('port' => 8080, 'root' => '/usr/local/homer/dist') }
         it { is_expected.to contain_exec('homer-app-db-init').with_command(sensitive(%r{-database-root-password=pg-from-hiera })) }
+        it { is_expected.to contain_exec('homer-app-admin-password').with_command(sensitive(%r{-update-ui-password=ui-from-hiera })) }
       end
     end
   end

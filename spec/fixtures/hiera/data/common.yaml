@@ -6,3 +6,4 @@ homer::server_settings:
 homer::app_settings:
   http_settings:
     port: 8080
+homer::app_admin_password: 'ui-from-hiera'

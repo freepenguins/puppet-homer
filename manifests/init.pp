@@ -117,6 +117,13 @@
 # @param app_db_init_marker
 #   File written after the database setup succeeds; while it exists the
 #   setup does not run again.
+# @param app_admin_user
+#   homer-app web UI user whose password `app_admin_password` sets.
+# @param app_admin_password
+#   Password for `app_admin_user`, or empty to leave it alone (homer-app's
+#   default for `admin` is `sipcapture`). Converted to `Sensitive` on lookup.
+#   Each run logs in with it; if that fails, the password is set with
+#   `homer-app -update-ui-user`. The user must already exist.
 # @param app_service_name
 #   homer-app service.
 # @param app_service_ensure
@@ -187,6 +194,8 @@ class homer (
   Hash[String[1], Any]                        $app_settings,
   Boolean                                     $app_db_init,
   Stdlib::Absolutepath                        $app_db_init_marker,
+  String[1]                                   $app_admin_user,
+  Variant[String, Sensitive[String]]          $app_admin_password,
   String[1]                                   $app_service_name,
   Stdlib::Ensure::Service                     $app_service_ensure,
   Boolean                                     $app_service_enable,
